@@ -1,47 +1,111 @@
 package br.com.alura.literAlura.principal;
 
-import br.com.alura.literAlura.model.DadosAutor;
-import br.com.alura.literAlura.model.DadosLivro;
-import br.com.alura.literAlura.model.RespostaApi;
-import br.com.alura.literAlura.service.ConsumoApi;
-import br.com.alura.literAlura.service.ConverteDados;
+
+import br.com.alura.literAlura.model.Livro;
+
+import br.com.alura.literAlura.reposirory.AutorRepository;
+import br.com.alura.literAlura.reposirory.LivroRepository;
+
+import br.com.alura.literAlura.service.GutenService;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Scanner;
 
-public class Principal {
-    Scanner leitura = new Scanner(System.in);
-    private ConsumoApi consumo = new ConsumoApi();
-    private ConverteDados conversor = new ConverteDados();
+@Component
+public class Principal implements CommandLineRunner {
+    private final Scanner scanner = new Scanner(System.in);
+    private final GutenService gutenService;
+    private final LivroRepository livroRepository;
+    private final AutorRepository autorRepository;
 
-    private final String ENDERECO = "https://gutendex.com/books/?search=";
-
-
-    public void exibeMenu(){
-        System.out.println("Digite o nome do livro para buscar");
-        var nomeLivro = leitura.nextLine();
-
-        var json = consumo.obterDados(ENDERECO + nomeLivro.replace(" ", "%20"));
-        System.out.println("\nJSON bruto recebido: \n" + json);
-        RespostaApi respostaApi = conversor.obterDados(json, RespostaApi.class);
-
-        if (respostaApi != null && respostaApi.resultados() != null && !respostaApi.resultados().isEmpty()) {
-            List<DadosLivro> livrosEncotrados = respostaApi.resultados();
-            System.out.println("\n -- Livros encontrados (processando para objetos java): --");
-            for (DadosLivro livro : livrosEncotrados) {
-                System.out.println(livro);
-            }
-        } else {
-            System.out.println("\nNenhum livro encontrado para a busca; '" + nomeLivro + "' ou erro no processamento.");
-        }
-        DadosLivro dados;
-        dados = conversor.obterDados(json, DadosLivro.class);
-        System.out.println(dados);
-
-
-
-
-
-
+    public Principal(GutenService gutenService, LivroRepository livroRepository, AutorRepository autorRepository) {
+        this.gutenService = gutenService;
+        this.livroRepository = livroRepository;
+        this.autorRepository = autorRepository;
     }
+
+    @Override
+    public void run(String... args) {
+        int opcao = -1;
+        while (opcao != 0) {
+            exibirMenu();
+            opcao = Integer.parseInt(scanner.nextLine());
+
+            switch (opcao) {
+                case 1 -> buscarLivroPorTitulo();
+                case 2 -> listarLivros();
+                case 3 -> listarAutores();
+                case 4 -> listarAutoresVivosPorAno();
+                case 5 -> listarLivrosPorIdioma();
+                case 0 -> System.out.println("Encerrando o programa.");
+                default -> System.out.println("Opção inválida.");
+            }
+        }
+    }
+
+    public void exibirMenu() {
+        System.out.println("\n========== LiterAlura ==========");
+        System.out.println("1 - Buscar livro por título");
+        System.out.println("2 - Listar livros registrados");
+        System.out.println("3 - Listar autores registrados");
+        System.out.println("4 - Listar autores vivos em um determinado ano");
+        System.out.println("5 - Listar livros por idioma");
+        System.out.println("0 - Sair");
+        System.out.print("Escolha uma opção: ");
+    }
+
+    private void buscarLivroPorTitulo() {
+        System.out.print("Digite o título do livro: ");
+        String titulo = scanner.nextLine();
+        var livroOptional = gutenService.buscarLivroPorTitulo(titulo);
+        livroOptional.ifPresentOrElse(
+                System.out::println,
+                () -> System.out.println("Livro não encontrado.")
+        );
+    }
+
+    private void listarLivros() {
+        List<Livro> livros = livroRepository.findAll();
+        if (livros.isEmpty()) {
+            System.out.println("Nenhum livro registrado.");
+        } else {
+            livros.forEach(System.out::println);
+        }
+    }
+
+    private void listarAutores() {
+        var autores = autorRepository.findAll();
+        if (autores.isEmpty()) {
+            System.out.println("Nenhum autor registrado.");
+        } else {
+            autores.forEach(System.out::println);
+        }
+    }
+
+    private void listarAutoresVivosPorAno() {
+        System.out.print("Digite o ano desejado: ");
+        int ano = Integer.parseInt(scanner.nextLine());
+        var autores = autorRepository.findByAnoNascimentoLessThanEqualAndAnoFalecimentoGreaterThanEqual(ano, ano);
+        if (autores.isEmpty()) {
+            System.out.println("Nenhum autor encontrado vivo no ano " + ano);
+        } else {
+            autores.forEach(System.out::println);
+        }
+    }
+
+    private void listarLivrosPorIdioma() {
+        System.out.print("Digite o idioma (ex: 'pt', 'en', 'es', 'fr'): ");
+        String idioma = scanner.nextLine().toLowerCase();
+        var livros = livroRepository.findByIdiomasContains(idioma);
+        if (livros.isEmpty()) {
+            System.out.println("Nenhum livro encontrado no idioma '" + idioma + "'");
+        } else {
+            livros.forEach(System.out::println);
+        }
+    }
+
 }
+
+

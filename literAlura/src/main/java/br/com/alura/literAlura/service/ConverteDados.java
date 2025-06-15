@@ -3,7 +3,9 @@ package br.com.alura.literAlura.service;
 import br.com.alura.literAlura.model.DadosLivro;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.stereotype.Component;
 
+@Component
 public class ConverteDados implements IConverteDados {
     private ObjectMapper mapper = new ObjectMapper();
 

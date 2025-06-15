@@ -12,8 +12,10 @@ import org.springframework.stereotype.Service;
 import jakarta.transaction.Transactional;
 
 import java.util.ArrayList;
+import java.util.DoubleSummaryStatistics;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class GutenService {
@@ -95,6 +97,7 @@ public class GutenService {
             return Optional.empty();
         }
     }
+
     @Transactional
     public List<Livro> listarTodosLivros() {
         List<Livro> livros = livroRepository.findAll();
@@ -106,4 +109,26 @@ public class GutenService {
         });
         return livros;
     }
+
+    public List<Livro> encontrarTop10LivrosMaisBaixados() {
+        return livroRepository.findAll().stream()
+                .filter(livro -> livro.getNumeroDownloads() != null) // Garante que não haja NPE
+                .sorted((l1, l2) -> l2.getNumeroDownloads().compareTo(l1.getNumeroDownloads())) // Ordena do maior para o menor
+                .limit(10) // Pega os 10 primeiros
+                .collect(Collectors.toList());
+    }
+    @Transactional
+    public List<Autor> buscarAutorPorNomeNoDB(String nome) {
+        List<Autor> autores = autorRepository.findByNameContainingIgnoreCase(nome);
+        // Opcional: para cada autor encontrado, inicialize a lista de livros se for exibi-los
+        autores.forEach(autor -> {
+            if (autor.getLivros() != null) {
+                autor.getLivros().size(); // Força a inicialização da coleção lazy de livros
+            }
+        });
+        return autores;
+    }
+
 }
+
+

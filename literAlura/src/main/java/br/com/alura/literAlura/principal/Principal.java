@@ -1,5 +1,6 @@
 package br.com.alura.literAlura.principal;
 
+import br.com.alura.literAlura.model.Autor;
 import br.com.alura.literAlura.model.Livro;
 
 import br.com.alura.literAlura.reposirory.AutorRepository;
@@ -9,9 +10,11 @@ import br.com.alura.literAlura.service.GutenService;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
+import java.util.DoubleSummaryStatistics;
 import java.util.InputMismatchException; // Pode ser útil se você usar nextInt() diretamente
 import java.util.List;
 import java.util.Scanner;
+import java.util.stream.Collectors;
 
 @Component
 public class Principal implements CommandLineRunner {
@@ -24,7 +27,9 @@ public class Principal implements CommandLineRunner {
         this.gutenService = gutenService;
         this.livroRepository = livroRepository;
         this.autorRepository = autorRepository;
+
     }
+
 
     @Override
     public void run(String... args) {
@@ -41,6 +46,9 @@ public class Principal implements CommandLineRunner {
                     case 3 -> listarAutores();
                     case 4 -> listarAutoresVivosPorAno();
                     case 5 -> listarLivrosPorIdioma();
+                    case 6 -> gerarEstatisticasDeDownloads();
+                    case 7 -> exibirTop10LivrosMaisBaixados();
+                    case 8 -> buscarAutorPorNome();
                     case 0 -> System.out.println("Encerrando o programa.");
                     default -> System.out.println("Opção inválida. Por favor, digite um número de 0 a 5.");
                 }
@@ -52,6 +60,9 @@ public class Principal implements CommandLineRunner {
         }
     }
 
+
+
+
     public void exibirMenu() {
         System.out.println("\n========== LiterAlura ==========");
         System.out.println("1 - Buscar livro por título");
@@ -59,6 +70,9 @@ public class Principal implements CommandLineRunner {
         System.out.println("3 - Listar autores registrados");
         System.out.println("4 - Listar autores vivos em um determinado ano");
         System.out.println("5 - Listar livros por idioma");
+        System.out.println("6 - Gerar Estatísticas de downloads");
+        System.out.println("7 - Top 10 livros mais baixados");
+        System.out.println("8 - Buscar Autor por nome");
         System.out.println("0 - Sair");
         System.out.print("Escolha uma opção: ");
     }
@@ -128,5 +142,67 @@ public class Principal implements CommandLineRunner {
             livros.forEach(System.out::println);
             System.out.println("----------------------------------------");
         }
+    }
+
+    private void gerarEstatisticasDeDownloads() {
+
+        List<Livro> livros = livroRepository.findAll();
+
+        if (livros.isEmpty()) {
+            System.out.println("Nenhum livro registrado para gerar estatísticas. ");
+            return;
+        }
+
+        DoubleSummaryStatistics stats = livros.stream()
+                .filter(livro -> livro.getNumeroDownloads() != null)
+                .mapToDouble(Livro::getNumeroDownloads)
+                .summaryStatistics();
+        System.out.println("\n --- Estatísticas de Downloads de Livros ---");
+        System.out.println("Total de livros com downloads: " + stats.getCount());
+        System.out.println("Soma total de downloads: " + stats.getSum());
+        System.out.println("Média de downloads: " + String.format("%.2f", stats.getAverage()));
+        System.out.println("Maior número de downloads: " + stats.getMax());
+        System.out.println("Menor número de downloads: " + stats.getMin());
+        System.out.println("=================================================\n");
+
+    }
+
+    private void exibirTop10LivrosMaisBaixados() {
+       List<Livro> top10 = gutenService.encontrarTop10LivrosMaisBaixados();
+        System.out.println("\n--- Top 10 Livros mais baixados ---");
+        if (top10.isEmpty()) {
+            System.out.println("Nenhum livro registrado.");
+        } else {
+            for (int i = 0; i < top10.size(); i++) {
+                Livro livro = top10.get(i);
+                System.out.println((i + 1) + ". " + livro.getTitulo() + " (Downloads: " + livro.getNumeroDownloads() + ")");
+            }
+        }
+        System.out.println(" ------------------------------------------------\n");
+    }
+    private void buscarAutorPorNome() {
+        System.out.print("Digite o nome ou parte do nome do autor: ");
+        String nomeAutor = scanner.nextLine();
+        List<Autor> autoresEncontrados = gutenService.buscarAutorPorNomeNoDB(nomeAutor);
+
+        System.out.println("\n--- Autores Encontrados ---");
+        if (autoresEncontrados.isEmpty()) {
+            System.out.println("Nenhum autor encontrado com o nome '" + nomeAutor + "'.");
+        } else {
+            autoresEncontrados.forEach(autor -> {
+                System.out.println("Autor: " + autor.getName() +
+                        ", Nascimento: " + autor.getAnoNascimento() +
+                        ", Falecimento: " + autor.getAnoFalecimento());
+                // Opcional: Imprimir os livros deste autor
+                if (autor.getLivros() != null && !autor.getLivros().isEmpty()) {
+                    System.out.println("  Livros:");
+                    autor.getLivros().forEach(livro -> System.out.println("    - " + livro.getTitulo()));
+                } else {
+                    System.out.println("  Nenhum livro associado encontrado no DB.");
+                }
+                System.out.println("---------------------------");
+            });
+        }
+        System.out.println("---------------------------\n");
     }
 }

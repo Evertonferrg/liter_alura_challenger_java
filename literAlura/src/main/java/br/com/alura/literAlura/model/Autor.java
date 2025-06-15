@@ -1,9 +1,9 @@
 package br.com.alura.literAlura.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 public class Autor {
@@ -15,12 +15,23 @@ public class Autor {
     private Integer anoNascimento;
     private Integer anoFalecimento;
 
+    @ManyToMany(mappedBy = "autores", fetch = FetchType.LAZY)
+    private List<Livro> livros = new ArrayList<>();
+
     public Autor(){}
 
     public Autor(String name, Integer anoNascimento, Integer anoFalecimento) {
         this.name = name;
         this.anoNascimento = anoNascimento;
         this.anoFalecimento = anoFalecimento;
+    }
+
+    public List<Livro> getLivros() {
+        return livros;
+    }
+
+    public void setLivros(List<Livro> livros) {
+        this.livros = livros;
     }
 
     public Long getId() {

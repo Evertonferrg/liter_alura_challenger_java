@@ -20,12 +20,11 @@ import java.util.stream.Collectors;
 public class Principal implements CommandLineRunner {
     private final Scanner scanner = new Scanner(System.in);
     private final GutenService gutenService;
-    private final LivroRepository livroRepository;
+
     private final AutorRepository autorRepository;
 
-    public Principal(GutenService gutenService, LivroRepository livroRepository, AutorRepository autorRepository) {
+    public Principal(GutenService gutenService,  AutorRepository autorRepository) {
         this.gutenService = gutenService;
-        this.livroRepository = livroRepository;
         this.autorRepository = autorRepository;
 
     }
@@ -132,9 +131,8 @@ public class Principal implements CommandLineRunner {
     private void listarLivrosPorIdioma() {
         System.out.print("Digite o idioma (ex: 'pt', 'en', 'es', 'fr'): ");
         String idioma = scanner.nextLine().toLowerCase();
-        // Lembre-se: findByIdiomaContainsIgnoreCase é o método mais provável se você tiver um String idioma em Livro
-        // Se você renomeou para findByIdiomaContainingIgnoreCase (recomendado), use esse nome aqui.
-        var livros = livroRepository.findByIdiomaContainsIgnoreCase(idioma); // <-- Verifique o nome do método no seu repo!
+        List<Livro> livros = gutenService.listarLivrosPorIdioma(idioma);
+
         if (livros.isEmpty()) {
             System.out.println("Nenhum livro encontrado no idioma '" + idioma + "'");
         } else {
@@ -146,24 +144,8 @@ public class Principal implements CommandLineRunner {
 
     private void gerarEstatisticasDeDownloads() {
 
-        List<Livro> livros = livroRepository.findAll();
+        gutenService.gerarEstatisticasDeDownloads();
 
-        if (livros.isEmpty()) {
-            System.out.println("Nenhum livro registrado para gerar estatísticas. ");
-            return;
-        }
-
-        DoubleSummaryStatistics stats = livros.stream()
-                .filter(livro -> livro.getNumeroDownloads() != null)
-                .mapToDouble(Livro::getNumeroDownloads)
-                .summaryStatistics();
-        System.out.println("\n --- Estatísticas de Downloads de Livros ---");
-        System.out.println("Total de livros com downloads: " + stats.getCount());
-        System.out.println("Soma total de downloads: " + stats.getSum());
-        System.out.println("Média de downloads: " + String.format("%.2f", stats.getAverage()));
-        System.out.println("Maior número de downloads: " + stats.getMax());
-        System.out.println("Menor número de downloads: " + stats.getMin());
-        System.out.println("=================================================\n");
 
     }
 

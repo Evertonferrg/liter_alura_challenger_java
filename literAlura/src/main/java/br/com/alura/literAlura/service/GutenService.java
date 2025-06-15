@@ -129,6 +129,37 @@ public class GutenService {
         return autores;
     }
 
+    @Transactional
+    public List<Livro> listarLivrosPorIdioma(String idioma) {
+        List<Livro> livros = livroRepository.findByIdiomaContainsIgnoreCase(idioma);
+        livros.forEach(livro -> {
+            if (livro.getAutores() != null) { // Adicionado verificação de null
+                livro.getAutores().size(); // Força a inicialização lazy
+            }
+        });
+        return livros;
+    }
+    public void gerarEstatisticasDeDownloads() {
+        List<Livro> livros = livroRepository.findAll(); // Acesso ao repositório aqui é OK, pois é no service.
+
+        if (livros.isEmpty()) {
+            System.out.println("Nenhum livro registrado para gerar estatísticas.");
+            return;
+        }
+
+        DoubleSummaryStatistics stats = livros.stream()
+                .filter(livro -> livro.getNumeroDownloads() != null)
+                .mapToDouble(Livro::getNumeroDownloads)
+                .summaryStatistics();
+        System.out.println("\n--- Estatísticas de Downloads de Livros ---");
+        System.out.println("Total de livros com downloads: " + stats.getCount());
+        System.out.println("Soma total de downloads: " + stats.getSum());
+        System.out.println("Média de downloads: " + String.format("%.2f", stats.getAverage()));
+        System.out.println("Maior número de downloads: " + stats.getMax());
+        System.out.println("Menor número de downloads: " + stats.getMin());
+        System.out.println("-------------------------------------------\n");
+    }
+
 }
 
 

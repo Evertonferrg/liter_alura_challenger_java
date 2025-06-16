@@ -47,6 +47,7 @@ public class GutenService {
 
         RespostaApi resposta = converteDados.obterDados(json, RespostaApi.class);
 
+        // O bloco 'if' principal para verificar se a API retornou resultados
         if (resposta != null && resposta.resultados() != null && !resposta.resultados().isEmpty()) {
             DadosLivro dadosLivro = resposta.resultados().get(0); // Pega o primeiro livro encontrado
 
@@ -55,44 +56,25 @@ public class GutenService {
             if (livroExistente.isPresent()) {
                 System.out.println("Livro já registrado no banco de dados: " + livroExistente.get().getTitulo());
                 // Força a inicialização da coleção de autores enquanto a sessão ainda está ativa
-                livroExistente.get().getAutores().size(); // LINHA ADICIONADA/ALTERADA
+                livroExistente.get().getAutores().size();
                 return livroExistente;
             }
 
-            // Crie o objeto Livro, mas ainda sem a lista de Autores gerenciados
-            Livro livro = new Livro();
-            livro.setTitulo(dadosLivro.titulo());
+            // AQUI: O método 'converter' do ConversorDeDados já é responsável por criar o objeto Livro
+            // com todas as propriedades (título, autores, idioma, downloads, e SUMÁRIO).
+            // Não há necessidade de setar estas propriedades novamente aqui no GutenService.
+            Livro livro = conversorDeDados.converter(dadosLivro);
 
-            if (dadosLivro.idiomas() != null && !dadosLivro.idiomas().isEmpty()) {
-                livro.setIdioma(dadosLivro.idiomas().get(0));
-            } else {
-                livro.setIdioma("Idioma Desconhecido");
-                System.out.println("Atenção: Idioma não encontrado para o livro '" + dadosLivro.titulo() + "', definido como 'Idioma Desconhecido'.");
-            }
-            livro.setNumeroDownloads(dadosLivro.numeroDownloads());
-
-            // Processar os autores para garantir que sejam gerenciados ou novos
-            List<Autor> autoresGerenciados = new ArrayList<>();
-            for (DadosAutor dadosAutor : dadosLivro.autores()) {
-                Optional<Autor> autorNoBanco = autorRepository.findByNameContainsIgnoreCase(dadosAutor.nome());
-
-                if (autorNoBanco.isPresent()) {
-                    autoresGerenciados.add(autorNoBanco.get());
-                } else {
-                    Autor novoAutor = new Autor(dadosAutor.nome(), dadosAutor.anoNascimento(), dadosAutor.anoFalecimento());
-                    autoresGerenciados.add(novoAutor);
-                }
-            }
-            livro.setAutores(autoresGerenciados);
-
-            // Salva o livro (e os novos autores serão cascateados)
+            // Salva o livro (e os novos autores serão cascateados, se a configuração estiver correta no modelo Livro)
             Livro livroSalvo = livroRepository.save(livro);
             System.out.println("Livro salvo com sucesso: " + livroSalvo.getTitulo());
-            // Força a inicialização da coleção de autores para o livro recém-salvo também
-            livroSalvo.getAutores().size(); // LINHA ADICIONADA/ALTERADA
+
+            // Força a inicialização da coleção de autores para o livro recém-salvo, se necessário
+            livroSalvo.getAutores().size();
+
             return Optional.of(livroSalvo);
 
-        } else {
+        } else { // Este 'else' agora é a contraparte correta do 'if' principal
             System.out.println("Livro não encontrado na API ou erro no processamento.");
             return Optional.empty();
         }
@@ -159,7 +141,4 @@ public class GutenService {
         System.out.println("Menor número de downloads: " + stats.getMin());
         System.out.println("-------------------------------------------\n");
     }
-
 }
-
-

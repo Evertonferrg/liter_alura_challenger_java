@@ -51,11 +51,16 @@ public class ConversorDeDados {
                 ? dadosLivro.idiomas().get(0)
                 : "N/A";
 
+        String resumo = null;
+        if (dadosLivro.sumarios() != null && !dadosLivro.sumarios().isEmpty()) {
+            resumo = String.join("\n\n", dadosLivro.sumarios());
+        }
         return new Livro(
                 dadosLivro.titulo(),
                 autoresConvertidos,
                 idioma,
-                dadosLivro.numeroDownloads()
+                dadosLivro.numeroDownloads(),
+                resumo
         );
     }
 }

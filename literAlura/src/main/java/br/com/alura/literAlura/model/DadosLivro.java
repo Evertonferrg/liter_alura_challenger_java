@@ -9,7 +9,8 @@ import java.util.List;
 public record DadosLivro(@JsonAlias("title")String titulo,
                          @JsonAlias("authors") List<DadosAutor> autores,
                          @JsonAlias("languages")List<String> idiomas,
-                         @JsonAlias("download_count") Integer numeroDownloads){
+                         @JsonAlias("download_count") Integer numeroDownloads,
+                         @JsonAlias("summaries") List<String> sumarios){
                         // @JsonAlias("id") Integer id) {
 
     @Override
